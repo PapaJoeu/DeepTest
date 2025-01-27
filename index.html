@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Print Imposition Calculator</title>
+    <style>
+        /* =============== */
+        /* BASE STYLES */
+        /* =============== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #f5f5f7;
+            color: #1d1d1f;
+            padding: 20px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        /* =============== */
+        /* LAYOUT COMPONENTS */
+        /* =============== */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .input-row {
+            margin: 12px 0;
+        }
+
+        /* =============== */
+        /* FORM ELEMENTS */
+        /* =============== */
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #1d1d1f;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            font-size: 15px;
+            background: #fff;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: #007AFF;
+            outline: none;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        /* =============== */
+        /* VISUALIZATION */
+        /* =============== */
+        .visualizer {
+            position: relative;
+            background: #f8f8fa;
+            border: 1px solid #e5e5e9;
+            border-radius: 12px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        #sheet {
+            position: relative;
+            background: repeating-conic-gradient(#f0f0f0 0% 25%, white 0% 50%) 
+                        50% / 20px 20px;
+        }
+
+        .document {
+            position: absolute;
+            background: rgba(0, 122, 255, 0.15);
+            border: 1px solid rgba(0, 122, 255, 0.3);
+        }
+
+        .bleed-area {
+            position: absolute;
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px dashed rgba(255, 59, 48, 0.4);
+        }
+
+        .safe-area {
+            position: absolute;
+            background: rgba(52, 199, 89, 0.1);
+            border: 1px dashed rgba(52, 199, 89, 0.4);
+        }
+
+        /* =============== */
+        /* RESULTS & MESSAGES */
+        /* =============== */
+        .results {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .warning {
+            color: #ff3b30;
+            background: rgba(255,59,48,0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid rgba(255,59,48,0.2);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .metric {
+            background: #f8f8fa;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .metric h4 {
+            color: #86868b;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .metric p {
+            font-weight: 600;
+            font-size: 18px;
+            color: #1d1d1f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sheet Configuration Section -->
+        <section class="section">
+            <h2>Sheet Configuration</h2>
+            <div class="input-row">
+                <label>Sheet Size (inches)</label>
+                <select id="sheetPreset" class="preset-select">
+                    <option value="custom">Custom</option>
+                    <option value="12x18" selected>12 × 18 (Standard)</option>
+                    <option value="8.5x11">8.5 × 11 (Letter)</option>
+                    <option value="11x17">11 × 17 (Tabloid)</option>
+                </select>
+                <div class="input-group">
+                    <input type="number" id="sheetWidth" value="12" step="0.01" placeholder="Width">
+                    <input type="number" id="sheetHeight" value="18" step="0.01" placeholder="Height">
+                </div>
+            </div>
+        </section>
+
+        <!-- Document Configuration Section -->
+        <section class="section">
+            <h2>Document Configuration</h2>
+            <div class="input-row">
+                <label>Document Size (inches)</label>
+                <select id="docPreset" class="preset-select">
+                    <option value="custom">Custom</option>
+                    <option value="5x7" selected>5 × 7 (Standard Card)</option>
+                    <option value="4x6">4 × 6 (Photo)</option>
+                    <option value="8.5x11">8.5 × 11 (Letter)</option>
+                </select>
+                <div class="input-group">
+                    <input type="number" id="docWidth" value="5" step="0.01" placeholder="Width">
+                    <input type="number" id="docHeight" value="7" step="0.01" placeholder="Height">
+                </div>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="rotate">
+                <label for="rotate">Rotate Document 90° for Better Fit</label>
+            </div>
+        </section>
+
+        <!-- Production Settings Section -->
+        <section class="section">
+            <h2>Production Settings</h2>
+            <div class="input-row">
+                <label>Bleed & Margins</label>
+                <input type="number" id="bleed" value="0.125" step="0.001" placeholder="Bleed Size (inches)">
+                <input type="number" id="margin" value="0.25" step="0.001" placeholder="Safety Margin (inches)">
+            </div>
+            <div class="input-row">
+                <label>Gutter Size (inches)</label>
+                <input type="number" id="gutter" value="0.125" step="0.001">
+            </div>
+        </section>
+
+        <!-- Calculation Visualizer -->
+        <section class="section">
+            <h2>Layout Visualization</h2>
+            <div class="visualizer">
+                <div id="sheet"></div>
+            </div>
+        </section>
+
+        <!-- Results Display -->
+        <section class="section results">
+            <div id="results"></div>
+            <div class="metrics" id="metrics"></div>
+        </section>
+    </div>
+
+    <script>
+        // ========================
+        // INITIALIZATION
+        // ========================
+        
+        // DOM Elements
+        const dom = {
+            sheetPreset: document.getElementById('sheetPreset'),
+            docPreset: document.getElementById('docPreset'),
+            sheetWidth: document.getElementById('sheetWidth'),
+            sheetHeight: document.getElementById('sheetHeight'),
+            docWidth: document.getElementById('docWidth'),
+            docHeight: document.getElementById('docHeight'),
+            rotate: document.getElementById('rotate'),
+            bleed: document.getElementById('bleed'),
+            margin: document.getElementById('margin'),
+            gutter: document.getElementById('gutter'),
+            sheet: document.getElementById('sheet'),
+            results: document.getElementById('results'),
+            metrics: document.getElementById('metrics')
+        };
+
+        // ========================
+        // MAIN CALCULATION FUNCTION
+        // ========================
+        
+        function calculateImposition() {
+            // Parse input values with fallbacks
+            const config = {
+                sheet: {
+                    width: parseFloat(dom.sheetWidth.value) || 0,
+                    height: parseFloat(dom.sheetHeight.value) || 0
+                },
+                doc: {
+                    width: parseFloat(dom.docWidth.value) || 0,
+                    height: parseFloat(dom.docHeight.value) || 0
+                },
+                bleed: parseFloat(dom.bleed.value) || 0,
+                margin: parseFloat(dom.margin.value) || 0,
+                gutter: parseFloat(dom.gutter.value) || 0,
+                rotated: dom.rotate.checked
+            };
+
+            // Apply rotation if needed
+            if (config.rotated) {
+                [config.doc.width, config.doc.height] = [config.doc.height, config.doc.width];
+            }
+
+            // Calculate effective sizes accounting for margins and bleed
+            const effective = {
+                sheetWidth: config.sheet.width - (config.margin * 2),
+                sheetHeight: config.sheet.height - (config.margin * 2),
+                docWidth: config.doc.width + (config.bleed * 2),
+                docHeight: config.doc.height + (config.bleed * 2)
+            };
+
+            // Calculate maximum documents per axis
+            const horizontal = Math.floor(
+                (effective.sheetWidth + config.gutter) / 
+                (effective.docWidth + config.gutter)
+            );
+            
+            const vertical = Math.floor(
+                (effective.sheetHeight + config.gutter) / 
+                (effective.docHeight + config.gutter)
+            );
+
+            const perSheet = horizontal * vertical;
+
+            // Update visualization
+            updateVisualization(config, effective, horizontal, vertical);
+            
+            // Update results display
+            updateResults(config, effective, horizontal, vertical, perSheet);
+        }
+
+        // ========================
+        // VISUALIZATION UPDATER
+        // ========================
+        
+        function updateVisualization(config, effective, cols, rows) {
+            // Clear previous visualization
+            dom.sheet.innerHTML = '';
+
+            // Set sheet dimensions maintaining aspect ratio
+            const aspectRatio = config.sheet.width / config.sheet.height;
+            const maxWidth = 400;
+            dom.sheet.style.width = `${maxWidth}px`;
+            dom.sheet.style.height = `${maxWidth / aspectRatio}px`;
+
+            // Calculate percentage-based dimensions
+            const docWidthPct = (effective.docWidth / config.sheet.width) * 100;
+            const docHeightPct = (effective.docHeight / config.sheet.height) * 100;
+            const gutterPct = (config.gutter / config.sheet.width) * 100;
+
+            // Create document elements
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const doc = document.createElement('div');
+                    doc.className = 'document';
+                    doc.style.width = `${docWidthPct}%`;
+                    doc.style.height = `${docHeightPct}%`;
+                    doc.style.left = `${col * (docWidthPct + gutterPct)}%`;
+                    doc.style.top = `${row * (docHeightPct + gutterPct)}%`;
+
+                    // Add bleed visualization
+                    const bleed = document.createElement('div');
+                    bleed.className = 'bleed-area';
+                    bleed.style.width = '100%';
+                    bleed.style.height = '100%';
+
+                    // Add safe area visualization
+                    const safeArea = document.createElement('div');
+                    safeArea.className = 'safe-area';
+                    safeArea.style.width = `${(config.doc.width / effective.docWidth) * 100}%`;
+                    safeArea.style.height = `${(config.doc.height / effective.docHeight) * 100}%`;
+                    safeArea.style.left = '50%';
+                    safeArea.style.top = '50%';
+                    safeArea.style.transform = 'translate(-50%, -50%)';
+
+                    doc.appendChild(bleed);
+                    doc.appendChild(safeArea);
+                    dom.sheet.appendChild(doc);
+                }
+            }
+        }
+
+        // ========================
+        // RESULTS UPDATER
+        // ========================
+        
+        function updateResults(config, effective, cols, rows, perSheet) {
+            // Calculate key metrics
+            const sheetArea = config.sheet.width * config.sheet.height;
+            const docArea = effective.docWidth * effective.docHeight;
+            const utilization = (perSheet * docArea) / sheetArea * 100;
+            const wasteArea = sheetArea - (perSheet * docArea);
+
+            // Build results HTML
+            let resultsHTML = `
+                <h3>Imposition Results</h3>
+                <div class="metrics">
+                    <div class="metric">
+                        <h4>Documents Per Sheet</h4>
+                        <p>${perSheet}</p>
+                    </div>
+                    <div class="metric">
+                        <h4>Sheet Utilization</h4>
+                        <p>${utilization.toFixed(1)}%</p>
+                    </div>
+                    <div class="metric">
+                        <h4>Total Waste Area</h4>
+                        <p>${wasteArea.toFixed(2)} in²</p>
+                    </div>
+                </div>
+            `;
+
+            // Add warnings if needed
+            if (config.bleed > 0.125) {
+                resultsHTML += `
+                    <div class="warning">
+                        ⚠️ Bleed exceeds standard 1/8" recommendation
+                    </div>
+                `;
+            }
+
+            dom.results.innerHTML = resultsHTML;
+        }
+
+        // ========================
+        // EVENT HANDLERS
+        // ========================
+        
+        // Preset Select Handlers
+        dom.sheetPreset.addEventListener('change', function() {
+            const [width, height] = this.value.split('x').map(Number);
+            if (!isNaN(width)) dom.sheetWidth.value = width;
+            if (!isNaN(height)) dom.sheetHeight.value = height;
+            calculateImposition();
+        });
+
+        dom.docPreset.addEventListener('change', function() {
+            const [width, height] = this.value.split('x').map(Number);
+            if (!isNaN(width)) dom.docWidth.value = width;
+            if (!isNaN(height)) dom.docHeight.value = height;
+            calculateImposition();
+        });
+
+        // Input Change Listeners
+        [
+            'sheetWidth', 'sheetHeight', 'docWidth', 'docHeight',
+            'bleed', 'margin', 'gutter', 'rotate'
+        ].forEach(id => {
+            document.getElementById(id).addEventListener('input', calculateImposition);
+        });
+
+        // Initial Calculation
+        calculateImposition();
+    </script>
+</body>
+</html>
